@@ -1,0 +1,133 @@
+# Get git commit version and date
+#GIT_VERSION := $(shell git --no-pager describe --tags --always --dirty)
+GIT_DATE := $(firstword $(shell git --no-pager show --date=short --format="%ai" --name-only))
+GIT_VERSION := $(shell git describe --abbrev=0 --tags)
+
+#SOAPYSDR_INCLUDE = SOAPYSDR
+#CWDAEMON_INCLUDE = CWDAEMON
+#MIDI_INCLUDE = MIDI
+
+BINDIR = bin
+INCDIR = include
+OBJDIR = obj
+SRCDIR = src
+
+TARGET = linhpsdr
+
+CC = gcc
+LINK = gcc
+
+GTKINCLUDES = `pkg-config --cflags gtk+-3.0`
+GTKLIBS = `pkg-config --libs gtk+-3.0`
+
+PORTAUDIO_INC = `pkg-config --cflags portaudio-2.0`
+PORTAUDIO_LIBS = `pkg-config --libs portaudio-2.0`
+
+AUDIO_LIBS = -lpulse-simple -lpulse -lpulse-mainloop-glib -lsoundio
+
+WIN_LIBS = -lwsock32 -lws2_32 -liphlpapi
+
+WDSP_LIBS = -LC:/msys64/mingw64/lib/wdsp
+WDSP_INC = -IC:/msys64/mingw64/include/wdsp
+
+CFLAGS = -mtune=native -no-pie -O3 -mwindows
+LFLAGS = -Wall
+
+ifeq ($(SOAPYSDR_INCLUDE),SOAPYSDR)
+SOURCES += $(SRCDIR)/soapy_discovery.c
+SOURCES += $(SRCDIR)/soapy_protocol.c
+SOAPYSDR_OPTIONS = -D SOAPYSDR
+SOAPYSDR_LIBS = -lSoapySDR
+endif
+
+ifeq ($(CWDAEMON_INCLUDE),CWDAEMON)
+SOURCES += $(SRCDIR)/cwdaemon.c
+CWDAEMON_OPTIONS = -D CWDAEMON
+CWDAEMON_LIBS = -lcw
+endif
+
+ifeq ($(MIDI_INCLUDE),MIDI)
+SOURCES += $(SRCDIR)/alsa_midi.c 
+SOURCES += $(SRCDIR)/midi2.c 
+SOURCES += $(SRCDIR)/midi3.c 
+SOURCES += $(SRCDIR)/midi_dialog.c
+MIDI_OPTIONS = -D MIDI
+MIDI_LIBS = -lasound
+endif
+
+OPTIONS = $(MIDI_OPTIONS) $(AUDIO_OPTIONS) $(SOAPYSDR_OPTIONS) \
+			$(CWDAEMON_OPTIONS) $(OPENGL_OPTIONS) \
+			-D GIT_DATE='"$(GIT_DATE)"' -D GIT_VERSION='"$(GIT_VERSION)"'
+
+LIBS = -lm -lpthread -lwdsp $(WIN_LIBS) $(GTKLIBS) $(PORTAUDIO_LIBS) $(AUDIO_LIBS) $(SOAPYSDR_LIBS) $(CWDAEMON_LIBS) $(OPENGL_LIBS) $(MIDI_LIBS) $(WDSP_LIBS)
+
+INCLUDES = $(GTKINCLUDES) $(PORTAUDIO_INC) -I$(INCDIR) $(WDSP_INC)
+
+COMPILE = $(CC) $(CFLAGS) $(OPTIONS) $(INCLUDES)
+
+SOURCES += $(SRCDIR)/main.c
+SOURCES += $(SRCDIR)/css.c
+SOURCES += $(SRCDIR)/audio.c
+SOURCES += $(SRCDIR)/version.c
+SOURCES += $(SRCDIR)/discovered.c
+SOURCES += $(SRCDIR)/discovery.c
+SOURCES += $(SRCDIR)/protocol1_discovery.c
+SOURCES += $(SRCDIR)/protocol2_discovery.c
+SOURCES += $(SRCDIR)/property.c
+SOURCES += $(SRCDIR)/mode.c
+SOURCES += $(SRCDIR)/filter.c
+SOURCES += $(SRCDIR)/band.c
+SOURCES += $(SRCDIR)/radio.c
+SOURCES += $(SRCDIR)/receiver.c
+SOURCES += $(SRCDIR)/transmitter.c
+SOURCES += $(SRCDIR)/vfo.c
+SOURCES += $(SRCDIR)/meter.c
+SOURCES += $(SRCDIR)/rx_panadapter.c
+SOURCES += $(SRCDIR)/tx_panadapter.c
+SOURCES += $(SRCDIR)/mic_level.c
+SOURCES += $(SRCDIR)/mic_gain.c
+SOURCES += $(SRCDIR)/drive_level.c
+SOURCES += $(SRCDIR)/waterfall.c
+SOURCES += $(SRCDIR)/wideband_panadapter.c
+SOURCES += $(SRCDIR)/wideband_waterfall.c
+SOURCES += $(SRCDIR)/protocol1.c
+SOURCES += $(SRCDIR)/protocol2.c
+SOURCES += $(SRCDIR)/radio_dialog.c
+SOURCES += $(SRCDIR)/receiver_dialog.c
+SOURCES += $(SRCDIR)/transmitter_dialog.c
+SOURCES += $(SRCDIR)/pa_dialog.c
+SOURCES += $(SRCDIR)/eer_dialog.c
+SOURCES += $(SRCDIR)/wideband_dialog.c
+SOURCES += $(SRCDIR)/about_dialog.c
+SOURCES += $(SRCDIR)/button_text.c
+SOURCES += $(SRCDIR)/wideband.c
+SOURCES += $(SRCDIR)/vox.c
+SOURCES += $(SRCDIR)/ext.c
+SOURCES += $(SRCDIR)/configure_dialog.c
+SOURCES += $(SRCDIR)/bookmark_dialog.c
+SOURCES += $(SRCDIR)/puresignal_dialog.c
+SOURCES += $(SRCDIR)/oc_dialog.c
+SOURCES += $(SRCDIR)/xvtr_dialog.c
+SOURCES += $(SRCDIR)/frequency.c
+SOURCES += $(SRCDIR)/error_handler.c
+SOURCES += $(SRCDIR)/radio_info.c
+SOURCES += $(SRCDIR)/rigctl.c
+SOURCES += $(SRCDIR)/bpsk.c
+SOURCES += $(SRCDIR)/subrx.c
+SOURCES += $(SRCDIR)/actions.c
+
+OBJECTS  := $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+
+$(BINDIR)/$(TARGET): $(OBJECTS)
+	@mkdir -p '$(@D)'
+	@$(LINK) $(OBJECTS) $(LFLAGS) $(LIBS) -o $@
+	@echo "Linking complete!"
+
+$(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.c
+	@mkdir -p '$(@D)'
+	@$(COMPILE) -c $< -o $@
+	@echo "Compiled "$<" successfully!"
+
+clean:
+	-rm -rf $(OBJDIR)
+	-rm -rf $(BINDIR)

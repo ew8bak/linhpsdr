@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        "gtk.h": "c",
+        "discovered.h": "c",
+        "receiver.h": "c",
+        "simple.h": "c",
+        "pulseaudio.h": "c",
+        "transmitter.h": "c",
+        "unistd.h": "c",
+        "bpsk.h": "c",
+        "main.h": "c",
+        "adc.h": "c",
+        "subrx.h": "c"
+    }
+}
